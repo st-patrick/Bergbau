@@ -6,11 +6,11 @@ const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
 
 // Rectangle dimensions
-const int RECT_WIDTH = 50;
-const int RECT_HEIGHT = 50;
+const int RECT_SIZE = 50;
 
-// Speed of the rectangle
-const int RECT_SPEED = 5;
+// Grid dimensions
+const int GRID_COLS = SCREEN_WIDTH / RECT_SIZE;
+const int GRID_ROWS = SCREEN_HEIGHT / RECT_SIZE;
 
 int main(int argc, char* args[]) {
     // Initialize SDL
@@ -20,7 +20,7 @@ int main(int argc, char* args[]) {
     }
 
     // Create window
-    SDL_Window* window = SDL_CreateWindow("SDL2 Rectangle Move",
+    SDL_Window* window = SDL_CreateWindow("SDL2 Rectangle Move on Grid",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
         SCREEN_WIDTH,
@@ -42,13 +42,10 @@ int main(int argc, char* args[]) {
     }
 
     // Set the initial position of the rectangle
-    SDL_Rect rect = { SCREEN_WIDTH / 2 - RECT_WIDTH / 2, SCREEN_HEIGHT / 2 - RECT_HEIGHT / 2, RECT_WIDTH, RECT_HEIGHT };
+    SDL_Rect rect = { SCREEN_WIDTH / 2 - RECT_SIZE / 2, SCREEN_HEIGHT / 2 - RECT_SIZE / 2, RECT_SIZE, RECT_SIZE };
 
     bool quit = false;
     SDL_Event e;
-
-    // Key state array
-    const Uint8* currentKeyStates = SDL_GetKeyboardState(nullptr);
 
     while (!quit) {
         // Handle events on the queue
@@ -56,27 +53,27 @@ int main(int argc, char* args[]) {
             if (e.type == SDL_QUIT) {
                 quit = true;
             }
+            else if (e.type == SDL_KEYDOWN) {
+                switch (e.key.keysym.sym) {
+                case SDLK_UP:
+                case SDLK_w:
+                    if (rect.y > 0) rect.y -= RECT_SIZE;
+                    break;
+                case SDLK_DOWN:
+                case SDLK_s:
+                    if (rect.y < SCREEN_HEIGHT - RECT_SIZE) rect.y += RECT_SIZE;
+                    break;
+                case SDLK_LEFT:
+                case SDLK_a:
+                    if (rect.x > 0) rect.x -= RECT_SIZE;
+                    break;
+                case SDLK_RIGHT:
+                case SDLK_d:
+                    if (rect.x < SCREEN_WIDTH - RECT_SIZE) rect.x += RECT_SIZE;
+                    break;
+                }
+            }
         }
-
-        // Update rectangle position based on key states
-        if (currentKeyStates[SDL_SCANCODE_UP] || currentKeyStates[SDL_SCANCODE_W]) {
-            rect.y -= RECT_SPEED;
-        }
-        if (currentKeyStates[SDL_SCANCODE_DOWN] || currentKeyStates[SDL_SCANCODE_S]) {
-            rect.y += RECT_SPEED;
-        }
-        if (currentKeyStates[SDL_SCANCODE_LEFT] || currentKeyStates[SDL_SCANCODE_A]) {
-            rect.x -= RECT_SPEED;
-        }
-        if (currentKeyStates[SDL_SCANCODE_RIGHT] || currentKeyStates[SDL_SCANCODE_D]) {
-            rect.x += RECT_SPEED;
-        }
-
-        // Ensure the rectangle stays within bounds
-        if (rect.x < 0) rect.x = 0;
-        if (rect.y < 0) rect.y = 0;
-        if (rect.x + RECT_WIDTH > SCREEN_WIDTH) rect.x = SCREEN_WIDTH - RECT_WIDTH;
-        if (rect.y + RECT_HEIGHT > SCREEN_HEIGHT) rect.y = SCREEN_HEIGHT - RECT_HEIGHT;
 
         // Clear screen
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -90,9 +87,6 @@ int main(int argc, char* args[]) {
 
         // Update screen
         SDL_RenderPresent(renderer);
-
-        // Delay to control frame rate
-        SDL_Delay(16); // Approximately 60 frames per second
     }
 
     // Clean up
