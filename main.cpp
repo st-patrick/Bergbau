@@ -10,7 +10,7 @@ const int RECT_WIDTH = 50;
 const int RECT_HEIGHT = 50;
 
 // Speed of the rectangle
-const int RECT_SPEED = 10;
+const int RECT_SPEED = 5;
 
 int main(int argc, char* args[]) {
     // Initialize SDL
@@ -46,36 +46,37 @@ int main(int argc, char* args[]) {
 
     bool quit = false;
     SDL_Event e;
-    int i = 0;
+
+    // Key state array
+    const Uint8* currentKeyStates = SDL_GetKeyboardState(nullptr);
 
     while (!quit) {
-        i++;
         // Handle events on the queue
         while (SDL_PollEvent(&e) != 0) {
             if (e.type == SDL_QUIT) {
                 quit = true;
             }
-            else if (e.type == SDL_KEYDOWN) {
-                switch (e.key.keysym.sym) {
-                case SDLK_UP:
-                case SDLK_w:
-                    rect.y -= RECT_SPEED;
-                    break;
-                case SDLK_DOWN:
-                case SDLK_s:
-                    rect.y += RECT_SPEED;
-                    break;
-                case SDLK_LEFT:
-                case SDLK_a:
-                    rect.x -= RECT_SPEED;
-                    break;
-                case SDLK_RIGHT:
-                case SDLK_d:
-                    rect.x += RECT_SPEED;
-                    break;
-                }
-            }
         }
+
+        // Update rectangle position based on key states
+        if (currentKeyStates[SDL_SCANCODE_UP] || currentKeyStates[SDL_SCANCODE_W]) {
+            rect.y -= RECT_SPEED;
+        }
+        if (currentKeyStates[SDL_SCANCODE_DOWN] || currentKeyStates[SDL_SCANCODE_S]) {
+            rect.y += RECT_SPEED;
+        }
+        if (currentKeyStates[SDL_SCANCODE_LEFT] || currentKeyStates[SDL_SCANCODE_A]) {
+            rect.x -= RECT_SPEED;
+        }
+        if (currentKeyStates[SDL_SCANCODE_RIGHT] || currentKeyStates[SDL_SCANCODE_D]) {
+            rect.x += RECT_SPEED;
+        }
+
+        // Ensure the rectangle stays within bounds
+        if (rect.x < 0) rect.x = 0;
+        if (rect.y < 0) rect.y = 0;
+        if (rect.x + RECT_WIDTH > SCREEN_WIDTH) rect.x = SCREEN_WIDTH - RECT_WIDTH;
+        if (rect.y + RECT_HEIGHT > SCREEN_HEIGHT) rect.y = SCREEN_HEIGHT - RECT_HEIGHT;
 
         // Clear screen
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -89,6 +90,9 @@ int main(int argc, char* args[]) {
 
         // Update screen
         SDL_RenderPresent(renderer);
+
+        // Delay to control frame rate
+        SDL_Delay(16); // Approximately 60 frames per second
     }
 
     // Clean up
