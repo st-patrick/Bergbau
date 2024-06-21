@@ -1,5 +1,7 @@
 #include <SDL.h>
+#include <SDL_ttf.h>
 #include <iostream>
+#include <string>
 
 // Screen dimensions
 const int SCREEN_WIDTH = 800;
@@ -12,6 +14,19 @@ const int RECT_SIZE = 50;
 const int GRID_COLS = SCREEN_WIDTH / RECT_SIZE;
 const int GRID_ROWS = SCREEN_HEIGHT / RECT_SIZE;
 
+// Function to render text
+void renderText(SDL_Renderer* renderer, TTF_Font* font, const std::string& text, int x, int y) {
+    SDL_Color textColor = { 0, 0, 0, 255 };
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, text.c_str(), textColor);
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+
+    SDL_Rect renderQuad = { x, y, textSurface->w, textSurface->h };
+    SDL_RenderCopy(renderer, textTexture, nullptr, &renderQuad);
+
+    SDL_DestroyTexture(textTexture);
+    SDL_FreeSurface(textSurface);
+}
+
 int main(int argc, char* args[]) {
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -19,8 +34,24 @@ int main(int argc, char* args[]) {
         return 1;
     }
 
+    // Initialize SDL_ttf
+    if (TTF_Init() == -1) {
+        std::cerr << "SDL_ttf could not initialize! TTF_Error: " << TTF_GetError() << std::endl;
+        SDL_Quit();
+        return 1;
+    }
+
+    // Load font
+    TTF_Font* font = TTF_OpenFont("assets/This Cafe.ttf", 24);
+    if (font == nullptr) {
+        std::cerr << "Failed to load font! TTF_Error: " << TTF_GetError() << std::endl;
+        TTF_Quit();
+        SDL_Quit();
+        return 1;
+    }
+
     // Create window
-    SDL_Window* window = SDL_CreateWindow("SDL2 Rectangle Move on Grid",
+    SDL_Window* window = SDL_CreateWindow("SDL2 Grid with Text",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
         SCREEN_WIDTH,
@@ -28,6 +59,8 @@ int main(int argc, char* args[]) {
         SDL_WINDOW_SHOWN);
     if (window == nullptr) {
         std::cerr << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+        TTF_CloseFont(font);
+        TTF_Quit();
         SDL_Quit();
         return 1;
     }
@@ -37,6 +70,8 @@ int main(int argc, char* args[]) {
     if (renderer == nullptr) {
         std::cerr << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl;
         SDL_DestroyWindow(window);
+        TTF_CloseFont(font);
+        TTF_Quit();
         SDL_Quit();
         return 1;
     }
@@ -79,6 +114,14 @@ int main(int argc, char* args[]) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderClear(renderer);
 
+        // Render the grid with cell numbers
+        for (int row = 0; row < GRID_ROWS; ++row) {
+            for (int col = 0; col < GRID_COLS; ++col) {
+                std::string cellNumber = std::to_string(row * GRID_COLS + col);
+                renderText(renderer, font, cellNumber, col * RECT_SIZE + 10, row * RECT_SIZE + 10);
+            }
+        }
+
         // Set render color to black (rect will be black)
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
@@ -92,6 +135,8 @@ int main(int argc, char* args[]) {
     // Clean up
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    TTF_CloseFont(font);
+    TTF_Quit();
     SDL_Quit();
 
     return 0;
