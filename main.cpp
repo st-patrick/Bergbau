@@ -2,6 +2,7 @@
 #include <SDL_ttf.h>
 #include <iostream>
 #include <string>
+#include <vector>
 
 // Screen dimensions
 const int SCREEN_WIDTH = 800;
@@ -13,6 +14,9 @@ const int RECT_SIZE = 50;
 // Grid dimensions
 const int GRID_COLS = SCREEN_WIDTH / RECT_SIZE;
 const int GRID_ROWS = SCREEN_HEIGHT / RECT_SIZE;
+
+// Cell states
+enum CellState { PASSABLE, UNPASSABLE };
 
 // Function to render text
 void renderText(SDL_Renderer* renderer, TTF_Font* font, const std::string& text, int x, int y) {
@@ -79,6 +83,13 @@ int main(int argc, char* args[]) {
     // Set the initial position of the rectangle
     SDL_Rect rect = { SCREEN_WIDTH / 2 - RECT_SIZE / 2, SCREEN_HEIGHT / 2 - RECT_SIZE / 2, RECT_SIZE, RECT_SIZE };
 
+    // Initialize grid with some unpassable cells
+    std::vector<std::vector<CellState>> grid(GRID_ROWS, std::vector<CellState>(GRID_COLS, PASSABLE));
+    // Example: Making some cells unpassable
+    grid[5][5] = UNPASSABLE;
+    grid[4][7] = UNPASSABLE;
+    grid[6][3] = UNPASSABLE;
+
     bool quit = false;
     SDL_Event e;
 
@@ -89,23 +100,35 @@ int main(int argc, char* args[]) {
                 quit = true;
             }
             else if (e.type == SDL_KEYDOWN) {
+                int newX = rect.x;
+                int newY = rect.y;
                 switch (e.key.keysym.sym) {
                 case SDLK_UP:
                 case SDLK_w:
-                    if (rect.y > 0) rect.y -= RECT_SIZE;
+                    newY -= RECT_SIZE;
                     break;
                 case SDLK_DOWN:
                 case SDLK_s:
-                    if (rect.y < SCREEN_HEIGHT - RECT_SIZE) rect.y += RECT_SIZE;
+                    newY += RECT_SIZE;
                     break;
                 case SDLK_LEFT:
                 case SDLK_a:
-                    if (rect.x > 0) rect.x -= RECT_SIZE;
+                    newX -= RECT_SIZE;
                     break;
                 case SDLK_RIGHT:
                 case SDLK_d:
-                    if (rect.x < SCREEN_WIDTH - RECT_SIZE) rect.x += RECT_SIZE;
+                    newX += RECT_SIZE;
                     break;
+                }
+
+                // Convert pixel coordinates to grid coordinates
+                int newGridX = newX / RECT_SIZE;
+                int newGridY = newY / RECT_SIZE;
+
+                // Check bounds and cell state
+                if (newGridX >= 0 && newGridX < GRID_COLS && newGridY >= 0 && newGridY < GRID_ROWS && grid[newGridY][newGridX] == PASSABLE) {
+                    rect.x = newX;
+                    rect.y = newY;
                 }
             }
         }
@@ -114,11 +137,18 @@ int main(int argc, char* args[]) {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderClear(renderer);
 
-        // Render the grid with cell numbers
+        // Render the grid with cell numbers and unpassable cells
         for (int row = 0; row < GRID_ROWS; ++row) {
             for (int col = 0; col < GRID_COLS; ++col) {
-                std::string cellNumber = std::to_string(row * GRID_COLS + col);
-                renderText(renderer, font, cellNumber, col * RECT_SIZE + 10, row * RECT_SIZE + 10);
+                if (grid[row][col] == UNPASSABLE) {
+                    SDL_SetRenderDrawColor(renderer, 0, 0, 139, 255); // Dark blue
+                    SDL_Rect cellRect = { col * RECT_SIZE, row * RECT_SIZE, RECT_SIZE, RECT_SIZE };
+                    SDL_RenderFillRect(renderer, &cellRect);
+                }
+                else {
+                    std::string cellNumber = std::to_string(row * GRID_COLS + col);
+                    renderText(renderer, font, cellNumber, col * RECT_SIZE + 10, row * RECT_SIZE + 10);
+                }
             }
         }
 
