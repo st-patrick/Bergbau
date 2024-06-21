@@ -9,14 +9,22 @@ const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
 
 // Rectangle dimensions
-const int RECT_SIZE = 50;
+const int CELL_PIXEL_SIZE = 50;
 
 // Grid dimensions
-const int GRID_COLS = SCREEN_WIDTH / RECT_SIZE;
-const int GRID_ROWS = SCREEN_HEIGHT / RECT_SIZE;
+const int GRID_COLS = SCREEN_WIDTH / CELL_PIXEL_SIZE;
+const int GRID_ROWS = SCREEN_HEIGHT / CELL_PIXEL_SIZE;
 
 // Cell states
 enum CellState { PASSABLE, UNPASSABLE };
+
+struct Player {
+    struct Position {
+		int row = 5;
+		int column = 5;
+	} position;
+} player;
+
 
 // Function to render text
 void renderText(SDL_Renderer* renderer, TTF_Font* font, const std::string& text, int x, int y) {
@@ -80,8 +88,12 @@ int main(int argc, char* args[]) {
         return 1;
     }
 
+
+    // setup player
+
+
     // Set the initial position of the rectangle
-    SDL_Rect rect = { SCREEN_WIDTH / 2 - RECT_SIZE / 2, SCREEN_HEIGHT / 2 - RECT_SIZE / 2, RECT_SIZE, RECT_SIZE };
+    SDL_Rect rect = { player.position.column * CELL_PIXEL_SIZE, player.position.row * CELL_PIXEL_SIZE, CELL_PIXEL_SIZE, CELL_PIXEL_SIZE };
 
     // Initialize grid with some unpassable cells
     std::vector<std::vector<CellState>> grid(GRID_ROWS, std::vector<CellState>(GRID_COLS, PASSABLE));
@@ -100,35 +112,42 @@ int main(int argc, char* args[]) {
                 quit = true;
             }
             else if (e.type == SDL_KEYDOWN) {
-                int newX = rect.x;
-                int newY = rect.y;
+                int newRow = player.position.row;
+                int newColumn = player.position.column;
                 switch (e.key.keysym.sym) {
-                case SDLK_UP:
-                case SDLK_w:
-                    newY -= RECT_SIZE;
-                    break;
-                case SDLK_DOWN:
-                case SDLK_s:
-                    newY += RECT_SIZE;
-                    break;
-                case SDLK_LEFT:
-                case SDLK_a:
-                    newX -= RECT_SIZE;
-                    break;
-                case SDLK_RIGHT:
-                case SDLK_d:
-                    newX += RECT_SIZE;
-                    break;
+                    case SDLK_UP:
+                    case SDLK_w:
+                        newRow -= 1;
+                        break;
+                    case SDLK_DOWN:
+                    case SDLK_s:
+                        newRow += 1;
+                        break;
+                    case SDLK_LEFT:
+                    case SDLK_a:
+                        newColumn -= 1;
+                        break;
+                    case SDLK_RIGHT:
+                    case SDLK_d:
+                        newColumn += 1;
+                        break;
                 }
 
-                // Convert pixel coordinates to grid coordinates
-                int newGridX = newX / RECT_SIZE;
-                int newGridY = newY / RECT_SIZE;
 
                 // Check bounds and cell state
-                if (newGridX >= 0 && newGridX < GRID_COLS && newGridY >= 0 && newGridY < GRID_ROWS && grid[newGridY][newGridX] == PASSABLE) {
-                    rect.x = newX;
-                    rect.y = newY;
+                if (newColumn >= 0 && newColumn < GRID_COLS &&
+                    newRow >= 0 && newRow < GRID_ROWS &&
+                    grid[newRow][newColumn] == PASSABLE) {
+
+                    player.position.row = newRow;
+                    player.position.column = newColumn;
+
+                    // convert grid coordinates to pixel coordinates
+                    int fromGridX = player.position.column * CELL_PIXEL_SIZE;
+                    int fromGridY = player.position.row * CELL_PIXEL_SIZE;
+
+                    rect.x = fromGridX;
+                    rect.y = fromGridY;
                 }
             }
         }
@@ -142,12 +161,12 @@ int main(int argc, char* args[]) {
             for (int col = 0; col < GRID_COLS; ++col) {
                 if (grid[row][col] == UNPASSABLE) {
                     SDL_SetRenderDrawColor(renderer, 0, 0, 139, 255); // Dark blue
-                    SDL_Rect cellRect = { col * RECT_SIZE, row * RECT_SIZE, RECT_SIZE, RECT_SIZE };
+                    SDL_Rect cellRect = { col * CELL_PIXEL_SIZE, row * CELL_PIXEL_SIZE, CELL_PIXEL_SIZE, CELL_PIXEL_SIZE };
                     SDL_RenderFillRect(renderer, &cellRect);
                 }
                 else {
                     std::string cellNumber = std::to_string(row * GRID_COLS + col);
-                    renderText(renderer, font, cellNumber, col * RECT_SIZE + 10, row * RECT_SIZE + 10);
+                    renderText(renderer, font, cellNumber, col * CELL_PIXEL_SIZE + 10, row * CELL_PIXEL_SIZE + 10);
                 }
             }
         }
